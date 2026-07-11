@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 资讯日报 — {{ date }}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #08080f;
+    color: #c8c8d4;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 60px 40px 80px; }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid #1a1a28;
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+  .header-top {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .logo {
+    font-size: 14px; font-weight: 600; color: #00c896;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .date { font-size: 13px; color: #5a5a72; }
+  .title {
+    font-size: 32px; font-weight: 700; color: #e8e8f0;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    font-size: 14px; color: #5a5a72;
+    margin-top: 6px;
+  }
+  .divider {
+    width: 40px; height: 2px; background: #00c896; margin-top: 16px;
+    border-radius: 1px;
+  }
+
+  /* News list */
+  .news-list { list-style: none; }
+  .news-item {
+    display: flex; gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid #111118;
+    transition: background 0.15s;
+  }
+  .news-item:hover { background: #0c0c16; margin: 0 -20px; padding: 28px 20px; border-radius: 6px; }
+  .news-num {
+    flex-shrink: 0; width: 36px;
+    font-size: 13px; font-weight: 600; color: #00c896;
+    font-variant-numeric: tabular-nums;
+    padding-top: 2px;
+  }
+  .news-body { flex: 1; min-width: 0; }
+  .news-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .news-source {
+    font-size: 11px; font-weight: 600; color: #00c896;
+    background: rgba(0, 200, 150, 0.08);
+    padding: 2px 8px; border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+  .news-title {
+    font-size: 17px; font-weight: 600; color: #e0e0ea;
+    text-decoration: none; display: block; margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .news-title:hover { color: #00c896; }
+  .news-summary {
+    font-size: 14px; color: #787894;
+    line-height: 1.7;
+  }
+  .news-link {
+    display: inline-block; margin-top: 6px;
+    font-size: 12px; color: #00c896; text-decoration: none;
+  }
+  .news-link:hover { text-decoration: underline; }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 80px 0; color: #4a4a60;
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+  /* Footer */
+  .footer {
+    margin-top: 60px; padding-top: 24px;
+    border-top: 1px solid #1a1a28;
+    font-size: 12px; color: #3a3a50;
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <div class="header-top">
+      <span class="logo">AI 资讯日报</span>
+      <span class="date">{{ date }}</span>
+    </div>
+    <h1 class="title">今日 AI 速览</h1>
+    <p class="subtitle">聚焦大厂动态 · 每日 10 条精选</p>
+    <div class="divider"></div>
+  </header>
+
+  {% if articles %}
+  <ol class="news-list">
+    {% for art in articles %}
+    <li class="news-item">
+      <span class="news-num">{{ "%02d"|format(loop.index) }}</span>
+      <div class="news-body">
+        <div class="news-meta">
+          <span class="news-source">{{ art.source }}</span>
+        </div>
+        <a class="news-title" href="{{ art.url }}" target="_blank" rel="noopener">{{ art.title }}</a>
+        <p class="news-summary">{{ art.summary }}</p>
+        <a class="news-link" href="{{ art.url }}" target="_blank" rel="noopener">阅读原文 →</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">📭</div>
+    <p>今日暂无资讯，请稍后再来。</p>
+  </div>
+  {% endif %}
+
+  <footer class="footer">
+    <span>AI News Daily</span>
+    <span>Generated at {{ generated_at }}</span>
+  </footer>
+</div>
+</body>
+</html>
