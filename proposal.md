@@ -1,152 +1,257 @@
+# AI 资讯日报 — 分板块改版需求文档（终版）
+
 ## 项目概述
 
-AI 资讯日报（AI News Daily）是一个自动化工具，每天定时从多个免费来源抓取 AI 行业最新动态，通过 AI 筛选出 10 条最值得关注的资讯，生成摘要并输出为深色科技风的 HTML 网页。
+AI 资讯日报（AI News Daily）是一个自动化工具，每天定时从多个免费来源抓取 AI 行业最新动态，通过 AI 筛选出最值得关注的资讯，按照**五个板块**分类呈现，生成摘要并输出为深色科技风的 HTML 网页。
 
-## 需求汇总
+### 改版核心变更
 
-| 维度 | 决策 |
-|------|------|
-| 推送形式 | 生成 HTML 网页，用户每天打开浏览器查看 |
-| 资讯语言 | 中文 + 英文混合 |
-| 资讯范围 | 聚焦国内外 AI 大厂 |
-| 每日条数 | 精选 10 条 |
-| 内容结构 | 标题 + 2~3 句中文摘要 + 可跳转原文链接 |
-| 消息来源 | Reddit、Hacker News、公司官方博客 RSS、中文 AI 媒体 |
-| 运行环境 | GitHub Actions 定时触发（每天 8:30 CST） |
-| 网页托管 | GitHub Pages |
-| UI 风格 | 深色主题，简洁科技风，暂不做移动端适配 |
-| 历史归档 | 暂不需要 |
-
-## 数据来源设计
-
-### 英文来源（免费，无需 API Key）
-
-| 来源 | 抓取方式 | 说明 |
-|------|----------|------|
-| Hacker News | 官方 Firebase API | 抓取热门帖子，按 AI 关键词过滤 |
-| Reddit | 公共 JSON API（无需鉴权） | 监控 r/MachineLearning、r/artificial、r/OpenAI、r/singularity |
-| OpenAI Blog | RSS | https://openai.com/blog/rss.xml |
-| Anthropic Blog | RSS | https://www.anthropic.com/blog/rss.xml |
-| Google DeepMind Blog | RSS | https://deepmind.google/blog/rss.xml |
-| Meta AI Blog | RSS | https://ai.meta.com/blog/rss/ |
-| Microsoft AI Blog | RSS | https://blogs.microsoft.com/ai/feed/ |
-| NVIDIA AI Blog | RSS | https://blogs.nvidia.com/blog/category/ai/feed/ |
-
-### 中文来源（免费，通过网页抓取或 RSS）
-
-| 来源 | 抓取方式 | 说明 |
-|------|----------|------|
-| 机器之心 | RSS / 网页解析 | 国内头部 AI 媒体 |
-| 量子位 | 网页解析 | 国内头部 AI 媒体 |
-| 36氪 AI 板块 | 网页解析 | 综合科技媒体的 AI 分类 |
-| AGI Hunt | 网页解析 | 专注 AGI 前沿动态的资讯平台 |
-
-### 信息处理流程
-
-flowchart TD
-    A[GitHub Actions 定时触发<br/>每天 08:30 CST] --> B[Python 爬虫启动]
-    B --> C1[抓取 Reddit API]
-    B --> C2[抓取 Hacker News API]
-    B --> C3[抓取各博客 RSS]
-    B --> C4[抓取中文来源网页]
-    C1 & C2 & C3 & C4 --> D[去重 & 清洗]
-    D --> E[调用 DeepSeek API 筛选 + 生成摘要]
-    E --> F[渲染 HTML 模板]
-    F --> G[部署到 GitHub Pages]
-    G --> H[用户打开网页即看]
-
-## AI 摘要与筛选
-
-从众多来源抓取到的原始数据需要经过 AI 处理，完成两件事：
-
-1. **筛选**：从几十上百条原始资讯中，挑出 10 条最值得关注的（与大厂相关、有行业影响力）
-2. **摘要**：为每一条生成 2~3 句中文摘要
-
-**已选定方案：DeepSeek API**
-
-DeepSeek API 中文能力强，价格极低（≈¥0.3/月），注册 https://platform.deepseek.com 即可获取 API Key，新用户有免费额度。接口兼容 OpenAI SDK 格式，接入简单。
-
-## 重点关注的大厂列表
-
-OpenAI、Anthropic、Google DeepMind、Meta AI、Microsoft AI、NVIDIA AI、字节豆包、阿里通义、DeepSeek、腾讯混元、智谱、MiniMax、小米 Mimo、Apple AI
-
-## 定时运行与部署
-
-### GitHub Actions 配置
-
-- **触发时间**：UTC 00:30（北京时间 08:30），每周一至周五
-- **运行流程**：拉代码 → 装依赖 → 跑爬虫 → 生成 HTML → 推到 GitHub Pages 分支
-
-### GitHub Pages 托管
-
-- HTML 生成后自动发布到 `gh-pages` 分支
-- 访问地址类似：`https://你的用户名.github.io/AI_news_daily`
-- 每天自动更新，用户打开即是最新内容
-
-### 你需要准备的
-
-| 事项 | 说明 | 费用 |
-|------|------|------|
-| GitHub 账号 | 注册 https://github.com | 免费 |
-| 创建仓库 | 存放代码，开启 GitHub Pages | 免费 |
-| DeepSeek API Key | 注册获取，存为 GitHub Secret | 几乎免费（≈¥0.3/月） |
-
-## 项目目录结构
-
-```
-AI_news_daily/
-├── .github/
-│   └── workflows/
-│       └── daily.yml          # GitHub Actions 定时任务配置
-├── src/
-│   ├── crawlers/              # 各来源爬虫
-│   │   ├── hackernews.py
-│   │   ├── reddit.py
-│   │   ├── rss_blogs.py
-│   │   └── chinese_sites.py
-│   ├── curator.py             # 调用 DeepSeek 筛选 & 摘要
-│   ├── render.py              # 生成 HTML
-│   └── config.py               # 配置（关键词、来源列表等）
-├── templates/
-│   └── index.html             # HTML 模板（Jinja2）
-├── output/                    # 生成的 HTML 输出目录
-├── requirements.txt           # Python 依赖
-├── proposal.md               # 本文档
-└── README.md
-```
-
-## 技术栈
-
-| 组件 | 选型 | 原因 |
-|------|------|------|
-| 语言 | Python 3.11+ | 生态丰富，爬虫/数据处理方便 |
-| HTTP 请求 | `httpx` | 异步支持，API 友好 |
-| RSS 解析 | `feedparser` | RSS 标准库，久经考验 |
-| HTML 解析 | `BeautifulSoup4` | 中文网页抓取必备 |
-| 模板渲染 | `Jinja2` | Python 标配模板引擎 |
-| AI 调用 | `openai` SDK（兼容 DeepSeek） | DeepSeek 接口兼容 OpenAI 格式 |
-| 调度 | GitHub Actions | 免费，稳定 |
-| 托管 | GitHub Pages | 免费，自动部署 |
-
-## 开发排期
-
-| 阶段 | 内容 | 预计工作量 |
-|------|------|------------|
-| 1 | 搭建项目骨架，完成各来源爬虫 | 1 天 |
-| 2 | 接入 DeepSeek API，完成筛选 + 摘要逻辑 | 0.5 天 |
-| 3 | HTML 模板设计与渲染 | 0.5 天 |
-| 4 | GitHub Actions + Pages 部署配置 | 0.5 天 |
-| 5 | 联调测试，确保定时任务正常运行 | 0.5 天 |
-
-## 风险与限制
-
-| 风险 | 说明 | 应对 |
-|------|------|------|
-| 中文网站反爬 | 机器之心、36氪等可能封禁爬虫 | 控制频率 + 加 UA 伪装，严重时换源 |
-| Reddit API 限流 | 免费接口有频率限制 | 缓存策略，每分钟不超过 10 次请求 |
-| LLM 输出不稳定 | AI 摘要偶尔走样 | 代码层加格式校验，不合格时重试 |
-| GitHub Actions 运行时长 | 免费版单次最长 6 小时 | 当前设计预计 2~3 分钟，远低于上限 |
+| 维度 | 当前（v1） | 改版后（v2） |
+|------|-----------|-------------|
+| 内容结构 | 单列表，10 条混排 | 五大板块分类，约 15 条 |
+| 信源范围 | 8 个来源 | 扩充至覆盖更多国内 AI 公司 |
+| UI 布局 | 单列纵向列表 | 双列卡片网格，板块分色 |
+| 策展逻辑 | 统一筛选 Top 10 | 分类 → 板块独立筛选 |
+| AI 输出 | 每篇摘要 | 每篇分类标签 + 摘要 |
 
 ---
 
-*终版 · 需求已全部确认，进入开发阶段。*
+## 一、板块定义
+
+| 板块 | 标题色 | 内容范围 |
+|------|--------|----------|
+| 要闻 | `#00c896` 青绿 | AI 大厂及其核心高管的重大动态：战略发布、合作、融资、人事变动、CEO 公开发言等 |
+| 开发生态 | `#4da6ff` 蓝色 | 各 AI 公司的开发者相关更新：API 变动、SDK 更新、定价调整、平台政策变化、开源工具发布等 |
+| 模型发布 | `#ff6b6b` 红色 | 新模型推出/升级：文本模型、coding 模型、多模态模型、视频生成模型等 |
+| 产品应用 | `#ffa94d` 橙色 | AI 产品的具体应用案例、新产品上线、产品功能更新、AI 硬件等 |
+| 行业动态 | `#b197fc` 紫色 | 行业趋势、监管政策、学术突破、融资并购、人才流动、竞合关系等 |
+
+每个板块标题使用对应颜色字体，内容区域为卡片式方块。
+
+---
+
+## 二、信源设计
+
+### 2.1 板块与信源映射
+
+| 板块 | 主要信源 | 辅助信源 |
+|------|----------|----------|
+| 要闻 | 官方博客 RSS（OpenAI/Anthropic/DeepMind/Meta/Microsoft/NVIDIA）+ 国内公司博客 | 机器之心、量子位、Techmeme |
+| 开发生态 | 官方博客 RSS + HuggingFace Papers + Hacker News | GitHub Trending（各公司模型仓库） |
+| 模型发布 | 官方博客 RSS + HuggingFace Papers + GitHub Releases | 机器之心、量子位、AGI Hunt |
+| 产品应用 | Techmeme / Ars Technica + 36氪 | 量子位 |
+| 行业动态 | Techmeme + 36氪 + 机器之心 + Hacker News + AGI Hunt | Ars Technica |
+
+### 2.2 英文来源
+
+| 来源 | 抓取方式 | 覆盖内容 |
+|------|----------|----------|
+| Hacker News | Firebase API | 热门 AI 帖子 |
+| Techmeme | RSS | 科技行业头条 |
+| Ars Technica | RSS | 科技深度报道 |
+| HuggingFace Daily Papers | API | 每日热门论文 |
+| OpenAI Blog | RSS | OpenAI 官方公告 |
+| Anthropic Blog | RSS | Anthropic 官方公告 |
+| Google DeepMind Blog | RSS | DeepMind 官方公告 |
+| Meta AI Blog | RSS | Meta AI 官方公告 |
+| Microsoft AI Blog | RSS | 微软 AI 官方公告 |
+| NVIDIA AI Blog | RSS | NVIDIA AI 官方公告 |
+
+### 2.3 中文来源 & 新增国内 AI 公司信源
+
+| 来源 | 抓取方式 | 覆盖内容 |
+|------|----------|----------|
+| 机器之心 | RSS | 国内 AI 头部媒体 |
+| 量子位 | 网页解析 | 国内 AI 头部媒体 |
+| 36氪 AI 板块 | 网页解析 | 综合科技媒体 AI 分类 |
+| AGI Hunt | 网页解析 | AGI 前沿动态 |
+| **字节跳动 Seed / 豆包** | 社区媒体间接覆盖 | 豆包大模型、Seed 研究、字节 AI 动态 |
+| **阿里 Qwen / 通义** | GitHub API + 社区媒体间接覆盖 | Qwen 模型发布、通义产品更新 |
+| **小米 Mimo** | 社区媒体间接覆盖 | 小米 AI 模型与产品 |
+| **MiniMax** | 网页解析 + 社区媒体间接覆盖 | MiniMax 模型发布与产品 |
+| **智谱 GLM** | GitHub API + 网页解析 + 社区媒体间接覆盖 | GLM 模型发布、智谱产品 |
+| **Kimi / 月之暗面** | 网页解析 + 社区媒体间接覆盖 | Kimi 产品更新、Moonshot 模型 |
+
+> **说明**：字节 Seed、阿里 Qwen、智谱 GLM 等公司的模型通常会在 GitHub 发布或通过机器之心/量子位/36氪/AGI Hunt 等媒体首发报道，当前已有爬虫已能间接捕获。可选的增强方案：针对有 GitHub 仓库的公司（Qwen、GLM、MiniMax），新增 GitHub Releases API 爬虫，直接获取模型发布信息。
+
+### 2.4 关键设计决策
+
+- **不使用 Twitter/X API**：Twitter API 已全面收费。各大 AI 公司的官方博客 RSS 与其 Twitter 公告基本同步，加上中文科技媒体的转载覆盖，可间接获取相同信息
+- **国内 AI 公司**：以中文科技媒体间接覆盖为主，GitHub Releases API 为辅（约 60-70% 国内 AI 公司的模型发布在 GitHub 上有 Release 记录）
+
+---
+
+## 三、策展逻辑
+
+### 3.1 流程
+
+```
+爬虫收集 → 去重 → DeepSeek 分类（每篇文章打板块标签）
+→ 各板块独立排序 → 汇总（总数 ~15 条）
+```
+
+### 3.2 关键参数
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| 总文章数 | ~15 条 | 动态调整，当天文章多则略多，少则略少 |
+| 单板块上限 | 5 条 | 防止某个板块挤占其他板块空间 |
+| 单板块下限 | 1 条 | 即使某个板块文章少也至少保留 1 条（如有） |
+| 分类方式 | DeepSeek 自动分类 | 每篇文章输出 `category` 字段，映射到五大板块 |
+| 摘要 | DeepSeek 生成 | 每篇 2-3 句中文摘要 |
+
+### 3.3 DeepSeek Prompt 调整要点
+
+- 输入：所有去重后的文章列表
+- 输出：`[{title, category, summary, url, source}, ...]`
+- `category` 取值：`headline` / `dev_eco` / `model_launch` / `product_app` / `industry`
+- 要求：按重要性排序，确保五大板块均有覆盖
+
+### 3.4 Fallback 策略
+
+- 当天文章总数 < 5：直接展示所有文章，不限板块
+- DeepSeek API 不可用：按信源预设标签（如 OpenAI Blog → 要闻）做粗分类，取 score 排序
+
+---
+
+## 四、前端 UI 设计
+
+### 4.1 布局方案：双列卡片网格
+
+```
+┌──────────────────────────────────────────────┐
+│            AI 资讯日报 · 2026-07-17          │
+├────────────────────┬─────────────────────────┤
+│  要闻 (青绿)        │  开发生态 (蓝色)         │
+│  ┌────────────────┐ │ ┌─────────────────────┐ │
+│  │ 标题 + 摘要    │ │ │ 标题 + 摘要         │ │
+│  │ → 原文链接     │ │ │ → 原文链接          │ │
+│  │ 标题 + 摘要    │ │ │ ...                 │ │
+│  └────────────────┘ │ └─────────────────────┘ │
+├────────────────────┼─────────────────────────┤
+│  模型发布 (红)      │  产品应用 (橙)          │
+│  ┌────────────────┐ │ ┌─────────────────────┐ │
+│  │ ...            │ │ │ ...                 │ │
+│  └────────────────┘ │ └─────────────────────┘ │
+├────────────────────┴─────────────────────────┤
+│         行业动态 (紫色) — 跨列全宽             │
+│  ┌─────────────────────────────────────────┐  │
+│  │ ...                                     │  │
+│  └─────────────────────────────────────────┘  │
+└──────────────────────────────────────────────┘
+```
+
+### 4.2 设计要点
+
+- **整体风格**：保持当前深色科技风（背景 `#08080f`），在此基础上增强板块层次感
+- **布局**：CSS Grid 双列，最后一行行业动态跨列全宽（因为行业动态通常文章较多、覆盖面广）
+- **板块卡片**：每个板块是一个独立的暗色卡片方块（背景 `#0c0c16`），卡片之间留适当间距
+- **板块标题**：粗体大字 + 对应颜色（要闻青绿/开发生态蓝/模型发布红/产品应用橙/行业动态紫），标题下方带同色细线分割
+- **新闻条目**：每条新闻含标题（可点击跳转原文）、来源标签、简短摘要
+- **响应式**：桌面端双列，移动端（< 768px）自动切换为单列堆叠
+
+---
+
+## 五、处理流程
+
+```
+GitHub Actions 定时触发 (08:30 CST)
+    → Python 爬虫收集所有信源
+    → 去重 & 清洗
+    → DeepSeek API 分类 + 筛选 + 摘要
+    → 按板块组装数据结构
+    → Jinja2 渲染双列板块 HTML
+    → 部署到 GitHub Pages
+```
+
+---
+
+## 六、项目目录结构（改版后）
+
+```
+AI_news_daily/
+├── .github/workflows/daily.yml   # 不变
+├── src/
+│   ├── crawlers/
+│   │   ├── hackernews.py         # 不变
+│   │   ├── community.py          # 不变
+│   │   ├── rss_blogs.py          # 不变
+│   │   └── chinese_sites.py      # 可能新增 GitHub Releases 爬虫逻辑
+│   ├── curator.py                # ★ 改造：输出分类 + 摘要
+│   ├── render.py                 # ★ 改造：接收 sections 结构
+│   └── config.py                 # ★ 改造：新增板块定义、颜色、条数配置
+├── templates/index.html          # ★ 重写：双列卡片板块布局
+├── output/                       # 不变
+├── requirements.txt              # 可能新增 PyGithub（如需 GitHub API）
+└── proposal.md                   # 本文档
+```
+
+---
+
+## 七、数据结构设计
+
+### 7.1 文章对象
+
+```python
+{
+    "title": str,       # 原标题
+    "url": str,         # 原文链接
+    "source": str,      # 来源名称
+    "summary": str,     # 2-3 句中文摘要
+    "category": str,    # headline | dev_eco | model_launch | product_app | industry
+}
+```
+
+### 7.2 板块对象（传给模板）
+
+```python
+sections = [
+    {
+        "id": "headline",
+        "name": "要闻",
+        "color": "#00c896",
+        "icon": "📰",
+        "articles": [...]
+    },
+    {
+        "id": "dev_eco",
+        "name": "开发生态",
+        "color": "#4da6ff",
+        "icon": "🔧",
+        "articles": [...]
+    },
+    # ... 其余三个板块
+]
+```
+
+---
+
+## 八、技术栈（不变）
+
+| 组件 | 选型 |
+|------|------|
+| 语言 | Python 3.12 |
+| HTTP | `httpx` |
+| RSS | `feedparser` |
+| HTML 解析 | `BeautifulSoup4` |
+| 模板引擎 | `Jinja2` |
+| AI 调用 | `openai` SDK → DeepSeek API |
+| 调度 | GitHub Actions |
+| 托管 | GitHub Pages |
+
+---
+
+## 九、开发排期
+
+| 阶段 | 内容 | 预计工作量 |
+|------|------|------------|
+| 1 | 更新 `config.py`：板块定义、颜色、条数配置 | 0.25 天 |
+| 2 | 改造 `curator.py`：DeepSeek 分类 + 板块筛选 + 摘要 | 0.5 天 |
+| 3 | 扩充信源：新增 GitHub Releases API 爬虫（Qwen/GLM/MiniMax） | 0.25 天 |
+| 4 | 重写 `templates/index.html`：双列卡片板块布局 | 0.5 天 |
+| 5 | 适配 `render.py`：sections 数据结构传递 | 0.25 天 |
+| 6 | 联调 + GitHub Actions 测试 | 0.25 天 |
+
+---
+
+*终版 · 需求已全部确认，可进入开发阶段。*

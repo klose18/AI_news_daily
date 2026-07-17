@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI News Daily — main orchestrator.
+"""AI News Daily — main orchestrator (v2, sections-aware).
 
 Usage:
     DEEPSEEK_API_KEY=sk-xxx python main.py
@@ -27,7 +27,7 @@ def deduplicate(articles: list[dict]) -> list[dict]:
 
 def main() -> None:
     date_str = datetime.now().strftime("%Y-%m-%d")
-    print(f"=== AI News Daily — {date_str} ===\n")
+    print(f"=== AI News Daily v2 — {date_str} ===\n")
 
     # Phase 1: Collect from all sources
     print("[Main] Starting crawlers...")
@@ -48,13 +48,19 @@ def main() -> None:
         render([], date_str)
         return
 
-    # Phase 2: AI curation
-    print("\n[Main] Calling DeepSeek for curation...")
-    curated = curate(all_articles, date_str)
-    print(f"[Main] Curated: {len(curated)} articles")
+    # Phase 2: AI curation → sections
+    print("\n[Main] Calling DeepSeek for classification + summary...")
+    sections = curate(all_articles, date_str)
+
+    total = sum(len(s.get("articles", [])) for s in sections)
+    for s in sections:
+        count = len(s.get("articles", []))
+        if count:
+            print(f"  [{s['name']}] {count} articles")
+    print(f"[Main] Total curated: {total} articles across {len(sections)} sections")
 
     # Phase 3: Render HTML
-    output_path = render(curated, date_str)
+    output_path = render(sections, date_str)
 
     print(f"\n=== Done: {output_path} ===")
     sys.exit(0)

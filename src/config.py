@@ -3,6 +3,44 @@
 DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 DEEPSEEK_MODEL = "deepseek-chat"
 
+# ── 五大板块定义 ─────────────────────────────
+SECTIONS = [
+    {"id": "headline",     "name": "要闻",     "color": "#00c896", "icon": "📰", "max": 5},
+    {"id": "dev_eco",      "name": "开发生态",  "color": "#4da6ff", "icon": "🔧", "max": 5},
+    {"id": "model_launch", "name": "模型发布",  "color": "#ff6b6b", "icon": "🚀", "max": 5},
+    {"id": "product_app",  "name": "产品应用",  "color": "#ffa94d", "icon": "💡", "max": 5},
+    {"id": "industry",     "name": "行业动态",  "color": "#b197fc", "icon": "🌐", "max": 5},
+]
+
+TARGET_TOTAL = 15       # 目标总条数
+MIN_PER_SECTION = 1     # 单板块下限
+MAX_PER_SECTION = 5     # 单板块上限
+
+# 文章对象中的 category 取值
+CATEGORY_VALUES = ("headline", "dev_eco", "model_launch", "product_app", "industry")
+
+# ── 信源 → 板块映射（Fallback 用）────────────
+SOURCE_CATEGORY_MAP = {
+    # 官方博客 → 要闻 / 模型发布
+    "OpenAI Blog":         ("headline", "model_launch"),
+    "Anthropic Blog":      ("headline", "model_launch"),
+    "Google DeepMind":     ("headline", "model_launch"),
+    "Meta AI Blog":        ("headline", "model_launch"),
+    "Microsoft AI Blog":   ("headline", "model_launch"),
+    "NVIDIA AI Blog":      ("headline", "product_app"),
+    # 聚合/社区
+    "Techmeme":            ("headline", "industry"),
+    "Ars Technica":        ("industry", "product_app"),
+    "Hacker News":         ("dev_eco",  "industry"),
+    "Hugging Face Papers": ("model_launch", "dev_eco"),
+    # 中文站点
+    "机器之心":              ("industry",     "model_launch"),
+    "量子位":               ("product_app",  "headline"),
+    "36氪":                 ("industry",     "product_app"),
+    "AGI Hunt":            ("model_launch", "headline"),
+}
+
+# ── 原有配置（保持不变）────────────────────────
 TARGET_COMPANIES = [
     "OpenAI", "Anthropic", "Google DeepMind", "Meta AI", "Microsoft AI",
     "NVIDIA AI", "ByteDance", "Alibaba", "DeepSeek", "Tencent",

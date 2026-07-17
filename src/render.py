@@ -1,4 +1,4 @@
-"""HTML renderer using Jinja2 template."""
+"""HTML renderer using Jinja2 template — sections-aware."""
 
 import os
 from datetime import datetime
@@ -9,14 +9,22 @@ _TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templa
 _OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output")
 
 
-def render(articles: list[dict], date_str: str) -> str:
-    """Render curated articles to HTML and return the output path."""
+def render(sections: list[dict], date_str: str) -> str:
+    """Render section-structured curated articles to HTML.
+
+    *sections* is a list of dicts, each with keys:
+        id, name, color, icon, articles (list of article dicts)
+    """
     env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR))
     template = env.get_template("index.html")
 
+    # Count total articles across all sections
+    total_articles = sum(len(s.get("articles", [])) for s in sections)
+
     html = template.render(
         date=date_str,
-        articles=articles,
+        sections=sections,
+        total_articles=total_articles,
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S CST"),
     )
 
@@ -25,5 +33,5 @@ def render(articles: list[dict], date_str: str) -> str:
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"[Render] HTML written to {output_path}")
+    print(f"[Render] HTML written to {output_path} ({total_articles} articles in {len(sections)} sections)")
     return output_path

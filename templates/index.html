@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 资讯日报 — {{ date }}</title>
 <style>
+  /* ── Reset & base ─────────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #08080f;
@@ -12,119 +13,217 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.6;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
-  .container { max-width: 860px; margin: 0 auto; padding: 60px 40px 80px; }
+  a { color: inherit; text-decoration: none; }
 
-  /* Header */
-  .header {
-    border-bottom: 1px solid #1a1a28;
-    padding-bottom: 32px;
-    margin-bottom: 48px;
+  /* ── Container ────────────────────────────────────────────── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
   }
-  .header-top {
-    display: flex; align-items: baseline; justify-content: space-between;
+
+  /* ── Header ──────────────────────────────────────────────── */
+  .header {
+    text-align: center;
+    padding-bottom: 40px;
+    margin-bottom: 48px;
+    border-bottom: 1px solid #14141f;
+  }
+  .header-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #00c896;
+    background: rgba(0,200,150,0.08);
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #e8e8f0;
+    letter-spacing: -0.02em;
     margin-bottom: 8px;
   }
-  .logo {
-    font-size: 14px; font-weight: 600; color: #00c896;
-    letter-spacing: 0.08em; text-transform: uppercase;
+  .header .date {
+    font-size: 14px;
+    color: #5a5a72;
   }
-  .date { font-size: 13px; color: #5a5a72; }
-  .title {
-    font-size: 32px; font-weight: 700; color: #e8e8f0;
-    letter-spacing: -0.02em;
+  .header-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #4a4a62;
   }
-  .subtitle {
-    font-size: 14px; color: #5a5a72;
-    margin-top: 6px;
+
+  /* ── Section Grid ─────────────────────────────────────────── */
+  .section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
   }
-  .divider {
-    width: 40px; height: 2px; background: #00c896; margin-top: 16px;
+
+  /* Industry section spans full width */
+  .section-full { grid-column: 1 / -1; }
+
+  /* ── Section Card ─────────────────────────────────────────── */
+  .section-card {
+    background: #0c0c16;
+    border-radius: 10px;
+    padding: 24px 0 8px;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 0 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-icon { font-size: 18px; line-height: 1; }
+  .section-name {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .section-divider {
+    height: 2px;
     border-radius: 1px;
+    margin: 0 24px 4px;
+    opacity: 0.35;
   }
 
-  /* News list */
-  .news-list { list-style: none; }
-  .news-item {
-    display: flex; gap: 24px;
-    padding: 28px 0;
-    border-bottom: 1px solid #111118;
-    transition: background 0.15s;
+  /* ── Article rows ─────────────────────────────────────────── */
+  .article {
+    padding: 16px 24px;
+    transition: background 0.12s;
+    border-bottom: 1px solid #14141f;
   }
-  .news-item:hover { background: #0c0c16; margin: 0 -20px; padding: 28px 20px; border-radius: 6px; }
-  .news-num {
-    flex-shrink: 0; width: 36px;
-    font-size: 13px; font-weight: 600; color: #00c896;
-    font-variant-numeric: tabular-nums;
-    padding-top: 2px;
-  }
-  .news-body { flex: 1; min-width: 0; }
-  .news-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .news-source {
-    font-size: 11px; font-weight: 600; color: #00c896;
-    background: rgba(0, 200, 150, 0.08);
-    padding: 2px 8px; border-radius: 3px;
+  .article:last-child { border-bottom: none; }
+  .article:hover { background: rgba(255,255,255,0.02); }
+
+  .article-source {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    color: #5a5a72;
+    background: #11111e;
+    padding: 2px 8px;
+    border-radius: 3px;
     letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
   }
-  .news-title {
-    font-size: 17px; font-weight: 600; color: #e0e0ea;
-    text-decoration: none; display: block; margin-bottom: 6px;
-    line-height: 1.4;
+  .article-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e0e0ea;
+    line-height: 1.45;
+    display: block;
+    margin-bottom: 6px;
+    transition: color 0.15s;
   }
-  .news-title:hover { color: #00c896; }
-  .news-summary {
-    font-size: 14px; color: #787894;
-    line-height: 1.7;
+  .article-title:hover { color: var(--section-color, #00c896); }
+  .article-summary {
+    font-size: 13px;
+    color: #787894;
+    line-height: 1.65;
   }
-  .news-link {
-    display: inline-block; margin-top: 6px;
-    font-size: 12px; color: #00c896; text-decoration: none;
+  .article-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    transition: color 0.15s;
   }
-  .news-link:hover { text-decoration: underline; }
+  .article-link:hover { text-decoration: underline; }
 
-  /* Empty state */
+  /* ── Empty state ──────────────────────────────────────────── */
   .empty {
-    text-align: center; padding: 80px 0; color: #4a4a60;
+    text-align: center;
+    padding: 80px 0;
+    color: #4a4a60;
+    grid-column: 1 / -1;
   }
   .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty p { font-size: 14px; }
 
-  /* Footer */
+  /* ── Footer ──────────────────────────────────────────────── */
   .footer {
-    margin-top: 60px; padding-top: 24px;
-    border-top: 1px solid #1a1a28;
-    font-size: 12px; color: #3a3a50;
-    display: flex; justify-content: space-between;
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid #14141f;
+    font-size: 11px;
+    color: #3a3a50;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── Responsive ──────────────────────────────────────────── */
+  @media (max-width: 767px) {
+    .container { padding: 28px 16px 60px; }
+    .header h1 { font-size: 26px; }
+    .section-grid { grid-template-columns: 1fr; gap: 20px; }
+    .section-full { grid-column: auto; }
+    .section-header { padding: 0 18px 12px; }
+    .article { padding: 14px 18px; }
+    .section-divider { margin: 0 18px 2px; }
+    .section-card { padding: 16px 0 6px; }
   }
 </style>
 </head>
 <body>
 <div class="container">
   <header class="header">
-    <div class="header-top">
-      <span class="logo">AI 资讯日报</span>
-      <span class="date">{{ date }}</span>
+    <span class="header-badge">AI News Daily</span>
+    <h1>今日 AI 速览</h1>
+    <p class="date">{{ date }}</p>
+    <div class="header-stats">
+      <span>{{ total_articles }} 条资讯</span>
+      <span>·</span>
+      <span>五大板块 · 分类呈现</span>
     </div>
-    <h1 class="title">今日 AI 速览</h1>
-    <p class="subtitle">聚焦大厂动态 · 每日 10 条精选</p>
-    <div class="divider"></div>
   </header>
 
-  {% if articles %}
-  <ol class="news-list">
-    {% for art in articles %}
-    <li class="news-item">
-      <span class="news-num">{{ "%02d"|format(loop.index) }}</span>
-      <div class="news-body">
-        <div class="news-meta">
-          <span class="news-source">{{ art.source }}</span>
-        </div>
-        <a class="news-title" href="{{ art.url }}" target="_blank" rel="noopener">{{ art.title }}</a>
-        <p class="news-summary">{{ art.summary }}</p>
-        <a class="news-link" href="{{ art.url }}" target="_blank" rel="noopener">阅读原文 →</a>
+  {% if total_articles > 0 %}
+  <div class="section-grid">
+    {% for sec in sections %}
+    {% if sec.articles %}
+    <div class="section-card{% if sec.id == 'industry' %} section-full{% endif %}"
+         style="--section-color: {{ sec.color }};">
+      <div class="section-header">
+        <span class="section-icon">{{ sec.icon }}</span>
+        <span class="section-name" style="color: {{ sec.color }};">{{ sec.name }}</span>
       </div>
-    </li>
+      <div class="section-divider" style="background: {{ sec.color }};"></div>
+
+      {% for art in sec.articles %}
+      <div class="article">
+        <span class="article-source">{{ art.source }}</span>
+        <a class="article-title"
+           href="{{ art.url }}"
+           target="_blank"
+           rel="noopener"
+           style="--section-color: {{ sec.color }};">
+          {{ art.title }}
+        </a>
+        {% if art.summary and art.summary != "暂无摘要" %}
+        <p class="article-summary">{{ art.summary }}</p>
+        {% endif %}
+        <a class="article-link" style="color: {{ sec.color }};"
+           href="{{ art.url }}" target="_blank" rel="noopener">阅读原文 →</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% endfor %}
-  </ol>
+  </div>
   {% else %}
   <div class="empty">
     <div class="empty-icon">📭</div>
