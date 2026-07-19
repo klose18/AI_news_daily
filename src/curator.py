@@ -23,6 +23,17 @@ def curate(articles: list[dict], date_str: str) -> list[dict]:
     Returns a list of section dicts matching SECTIONS structure,
     each with a filled ``articles`` list.
     """
+    # ── Try loading .env if DEEPSEEK_API_KEY is not set ──────────────
+    if not os.environ.get("DEEPSEEK_API_KEY"):
+        _dotenv = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+        if os.path.exists(_dotenv):
+            with open(_dotenv) as _f:
+                for _line in _f:
+                    _line = _line.strip()
+                    if _line.startswith("DEEPSEEK_API_KEY="):
+                        os.environ["DEEPSEEK_API_KEY"] = _line.split("=", 1)[1].strip("\"'")
+                        break
+
     # ── Step 1: try DeepSeek ──────────────────────────────────────
     api_key = os.environ.get("DEEPSEEK_API_KEY", "")
     if api_key:
@@ -34,6 +45,7 @@ def curate(articles: list[dict], date_str: str) -> list[dict]:
     print("[Curator] Fallback: source-based categorisation")
     articles = sorted(articles, key=lambda x: x.get("score", 0), reverse=True)
     classified = _fallback_classify(articles)
+    classified = _translate_fallback(classified, date_str, api_key)
     return _build_sections(classified, force_flat=len(articles) < 5)
 
 
@@ -58,9 +70,10 @@ def _deepseek_classify(
 
     prompt = (
         f"今天是 {date_str}。以下是AI行业相关资讯列表。\n\n"
-        f"请为每篇资讯做两件事：\n"
+        f"请为每篇资讯做三件事：\n"
         "1. **分类**：将其归入以下五个板块之一\n"
-        "2. **摘要**：用 2-3 句中文概括核心内容\n\n"
+        "2. **摘要**：用 2-3 句中文概括核心内容\n"
+        "3. **标题翻译**：如果原标题是英文，请翻译成中文；中文标题则保留原样\n\n"
         "板块定义：\n"
         "- headline（要闻）：AI大厂及其核心高管的重大动态——战略发布、合作、融资、人事变动、CEO公开发言等\n"
         "- dev_eco（开发生态）：各AI公司的开发者相关更新——API变动、SDK更新、定价调整、平台政策、开源工具\n"
@@ -70,11 +83,12 @@ def _deepseek_classify(
         f"重点关注的大厂：{companies_str}\n\n"
         "要求：\n"
         "1. 每篇文章都必须输出 category + title + summary + url + source\n"
-        "2. 选出的总数控制在 15 条左右，每个板块最多 5 条\n"
-        "3. 优先保留重要大厂相关资讯\n"
-        "4. 严格按 JSON 数组格式输出，不要输出其他文字\n\n"
+        "2. 所有标题和摘要**必须使用中文**，英文标题必须翻译成中文后再输出\n"
+        "3. 选出的总数控制在 15 条左右，每个板块最多 5 条\n"
+        "4. 优先保留重要大厂相关资讯\n"
+        "5. 严格按 JSON 数组格式输出，不要输出其他文字\n\n"
         "输出格式：\n"
-        '[{"title": "标题", "category": "headline", "summary": "2-3句中文摘要", "url": "原文链接", "source": "来源名称"}, ...]\n\n'
+        '[{"title": "中文标题", "category": "headline", "summary": "2-3句中文摘要", "url": "原文链接", "source": "来源名称"}, ...]\n\n'
         f"以下是所有资讯：\n\n{articles_text}"
     )
 
@@ -198,6 +212,44 @@ def _empty_sections() -> list[dict]:
 
 
 # ── JSON helpers ──────────────────────────────────────────────────
+
+def _translate_fallback(classified: list[dict], date_str: str, api_key: str) -> list[dict]:
+    """Translate English titles/summaries in fallback results using DeepSeek."""
+    if not api_key:
+        return classified
+    client = OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
+    translated = []
+    for art in classified:
+        # Check if title contains Chinese characters
+        has_chinese = bool(re.search(r'[\u4e00-\u9fff]', art.get("title", "")))
+        if has_chinese:
+            translated.append(art)
+            continue
+        # Need translation
+        try:
+            resp = client.chat.completions.create(
+                model=DEEPSEEK_MODEL,
+                messages=[
+                    {"role": "system", "content": "You translate English news titles and summaries to Chinese. Output JSON: {\"title\": \"Chinese title\", \"summary\": \"Chinese summary\"}"},
+                    {"role": "user", "content": f"Title: {art.get('title', '')}\nSummary: {art.get('summary', '')}"}
+                ],
+                temperature=0.1,
+                max_tokens=1024,
+            )
+            result = resp.choices[0].message.content or ""
+            # Extract JSON
+            start = result.find("{")
+            end = result.rfind("}") + 1
+            if start >= 0 and end > start:
+                parsed = json.loads(result[start:end])
+                art["title"] = parsed.get("title", art["title"])
+                art["summary"] = parsed.get("summary", art["summary"])
+        except Exception as e:
+            print(f"[Curator] Translation error for '{art.get('title', '')[:40]}...': {e}")
+        translated.append(art)
+    print(f"[Curator] Translated {len(translated) - len(classified)} articles")
+    return translated
+
 
 def _parse_json(text: str) -> list[dict] | None:
     """Extract and parse JSON array from LLM response."""
